@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Ticket Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .form-container {
+            width: 50%;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            text-align: center; /* Center the form heading */
+        }
+
+        .form-row {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-label {
+            width: 150px;
+            text-align: right;
+            margin-right: 20px;
+        }
+
+        .form-field {
+            flex: 1;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .button-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .button-container button {
+            margin-right: 10px;
+        }
+
+        .add-new-btn, .delete-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px; /* Reduced font size */
+            cursor: pointer;
+            margin-right: 5px; /* Added margin between buttons */
+        }
+
+        .delete-btn {
+            background-color: #f44336; /* Changed background color to red */
+            margin-left: 5px; /* Added space with the left adjacent column */
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .translate-container {
+            text-align: right;
+            padding: 10px;
+        }
+
+        .translate-btn {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="translate-container">
+        <div id="google_translate_element"></div>
+
+    </div>
+
+    <div class="form-container">
+        <h2>Generate Ticket</h2>
+
+        <div class="form-row">
+            <label class="form-label">Session ID:</label>
+            <input class="form-field" type="text" value="QzTyac" disabled>
+        </div>
+
+        <div class="form-row">
+            <label class="form-label">Date:</label>
+            <input class="form-field" type="datetime-local" value="" required>
+        </div>
+
+        <div class="form-row" id="template" class="hidden">
+            <!-- Template for dynamic rows -->
+            <label class="form-label">Visitors:</label>
+            <button class="add-new-btn">+ Add new</button>
+            <select class="form-field category">
+                <option value="0">Select category</option>
+                <option value="12000">Students</option>
+                <option value="20000">Adults</option>
+                <option value="10000">Students, pensioners and the disabled</option>
+                <option value="25000">Children under 7 with a parent</option>
+                <option value="45000">Parents with 2 or more children under 18</option>
+            </select>
+            <input class="form-field quantity" type="number" style="width: 60px;" value="1"> <!-- Increased width -->
+            <input class="form-field price" type="number" style="width: 60px;"> <!-- Increased width -->
+            <button class="delete-btn">-</button>
+        </div>
+
+        <div class="form-row">
+            <label class="form-label">Cost:</label>
+            <input class="form-field" type="text" id="cost" disabled>
+            <label class="form-label">Discount:</label>
+            <input class="form-field" id="discount" type="number" placeholder="Enter discount">
+        </div>
+
+        <div class="form-row">
+            <label class="form-label">Sum:</label>
+            <input class="form-field" id="sum" readonly>
+        </div>
+
+        <div class="form-row">
+            <label class="form-label">Note:</label>
+            <textarea class="form-field" rows="4"></textarea>
+        </div>
+
+        <div class="button-container">
+            <button onclick="alert('QR code has yet to be attached here. \n Final integration and testing will be done in the next milestone')">Print</button>
+            <button onclick="alert('QR code has yet to be attached here. \n Final integration and testing will be done in the next milestone')">Ok</button>
+            <button onclick="">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript for dynamic rows
+        document.addEventListener('DOMContentLoaded', function() {
+            const addButton = document.querySelector('.add-new-btn');
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+            const templateRow = document.getElementById('template');
+            const dField = document.getElementById('discount');
+            dField.addEventListener("input",updateSum)
+            ///////
+            const newCategoryField1 = document.querySelector('.category');
+            const newQuantityField1 = document.querySelector('.quantity');
+
+            // Attach event listeners to update price on changes
+            newCategoryField1.addEventListener('change', updatePrice);
+            newQuantityField1.addEventListener('input', updatePrice);
+
+            
+            
+
+            addButton.addEventListener('click', addNewRow);
+
+            function addNewRow() {
+                const newRow = templateRow.cloneNode(true);
+                newRow.classList.remove('hidden');
+                templateRow.parentNode.insertBefore(newRow, templateRow.nextSibling);
+
+                const newDeleteButton = newRow.querySelector('.delete-btn');
+                newDeleteButton.addEventListener('click', function() {
+                    newRow.remove();
+                    updateCostAndSum();
+                });
+                newRow.querySelector('.price').value = 0
+                newRow.querySelector('.category').value = 0
+                newRow.querySelector('.quantity').value = 1
+                newRow.querySelector('.add-new-btn').style.display = "none"
+
+                const newCategoryField = newRow.querySelector('.category');
+                const newQuantityField = newRow.querySelector('.quantity');
+                const newPriceField = newRow.querySelector('.price');
+                
+
+
+                // Attach event listeners to update price on changes
+                newCategoryField.addEventListener('change', updatePrice);
+                newQuantityField.addEventListener('input', updatePrice);
+
+                updateCostAndSum();
+            }
+
+            deleteButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const row = button.parentNode;
+                    row.remove();
+                    updateCostAndSum();
+                });
+            });
+
+            function updatePrice() {
+                const selectedCategoryValue = parseFloat(this.parentNode.querySelector('.category').value) || 1;
+                console.log(selectedCategoryValue)
+                const quantity = parseFloat(this.parentNode.querySelector('.quantity').value) || 1;
+                this.parentNode.querySelector('.price').value = selectedCategoryValue * quantity;
+                updateCostAndSum();
+            }
+
+            function updateCostAndSum() {
+                const priceFields = document.querySelectorAll('.price');
+                const discountField = document.getElementById('discount');
+                const costField = document.getElementById('cost');
+                const sumField = document.getElementById('sum');
+
+                let totalCost = 0;
+
+                priceFields.forEach(function(priceField) {
+                    totalCost += parseFloat(priceField.value) || 0;
+                });
+
+                costField.value = totalCost;
+                updateSum();
+            }
+
+            function updateSum() {
+                const totalCost = parseFloat(document.getElementById('cost').value) || 0;
+                const discount = parseFloat(document.getElementById('discount').value) || 0;
+
+                const sum = totalCost - discount;
+                document.getElementById('sum').value = sum.toFixed(2); // Assuming you want to display the sum with two decimal places
+            }
+        });
+    </script>
+
+    <!-- Include the Google Translate API script -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({ pageLanguage: 'en', includedLanguages: 'en,es,fr', autoDisplay: true }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+</html>
